@@ -2,7 +2,7 @@ module TimeStructPlotting
 
 using Luxor
 using Colors
-using TimeStructures
+using TimeStruct
 
 include("plot.jl")
 

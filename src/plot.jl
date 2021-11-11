@@ -20,7 +20,6 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing)
     r = min(5, h / 20, 0.2 * w / len)
     duracc = 0
     for (i,t) in enumerate(ts)
-        println(duracc, " ", dur)
         circle(Point(bbox[1].x + r + (w - 2*r) * duracc / dur, mid.y), r, :fill)
         duracc += duration(t)
     end
