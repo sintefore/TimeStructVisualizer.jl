@@ -53,12 +53,12 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), period = PlotPeriod(), dur
         duracc += duration(t)
 
         if showdur
-            sethue("white")
+            sethue("black")
             text("$(duration(t))", center + (3*r,-r) , halign=:center,   valign = :bottom)
         end
          
         if !isnothing(profile)
-            sethue("yellow")
+            sethue("blue")
             text("$(profile[period])", center + (3*r,r) , halign=:center,   valign = :top)
         end
 
@@ -111,7 +111,7 @@ function _draw(ts::TwoLevel, bbox = BoundingBox(), period = PlotPeriod();
             line(bm + (-15,0), bm, :stroke)
             if showdur
                 l = line(boxbottomleft(tbox), boxbottomright(tbox), :stroke)
-                sethue("white")
+                sethue("black")
                 text("$(ts.duration[i])", midpoint(boxbottomleft(tbox), boxbottomright(tbox)) + (0,-5) , halign=:center,   valign = :bottom)
             end
         elseif layout == :top
@@ -122,7 +122,7 @@ function _draw(ts::TwoLevel, bbox = BoundingBox(), period = PlotPeriod();
             pt2 = boxtopright(tbox) + offset + (40,0) 
             line(pt1, pt2, :stroke)
             if showdur
-                sethue("white")
+                sethue("black")
                 text("$(ts.duration[i])", midpoint(pt1 + (0,-5),pt2 + (0,-5)) , halign=:center,   valign = :bottom)
             end
         else
@@ -140,6 +140,7 @@ end
 
 function draw(ts::TimeStructure; showdur = false, profile = nothing, layout = :middle)
     Drawing(600, 400, :svg)
+    background("white")
     origin()
     _draw(ts; showdur = showdur, profile = profile, layout = layout)
     finish()
