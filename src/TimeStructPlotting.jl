@@ -6,6 +6,6 @@ using TimeStruct
 
 include("plot.jl")
 
-export plot
+export draw
 
 end # module
