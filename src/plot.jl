@@ -1,18 +1,6 @@
 
-struct TimeStructPlot <: TimeStruct.TimeStructure end
-mutable struct PlotPeriod <: TimeStruct.TimePeriod{TimeStructPlot}
-    op
-    sp
-    sc
-    branch
-end
-TimeStruct.strat_per(p::PlotPeriod) = p.sp
-TimeStruct.opscen(p::PlotPeriod) = p.sc
-TimeStruct.branch(p::PlotPeriod) = p.branch
 
-PlotPeriod() = PlotPeriod(1,1,1,1)
-
-function _draw(ts::SimpleTimes, bbox = BoundingBox(), period = PlotPeriod(), dur = nothing; 
+function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing; 
     showdur = false,  showprob = false, profile = nothing, layout = :middle)
 
     len = length(ts)
@@ -27,12 +15,12 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), period = PlotPeriod(), dur
     if layout == :middle
         start = boxmiddleleft(bbox) 
     elseif layout == :top
-        start = boxtopleft(bbox) + (0,40)
+        start = boxtopleft(bbox) + (0,h/2)
     end
 
     # Draw a line across the box according to total duration
     setcolor(Luxor.julia_red)
-    l = line(start, start + (w * duration(ts) / dur,0), :stroke)
+    line(start, start + (w * duration(ts) / dur,0), :stroke)
 
     if layout == :top
         setdash("dash")
@@ -44,9 +32,8 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), period = PlotPeriod(), dur
     # Add circles at intervals relative to duration
     r = max(2, min(5, h / 20, 0.2 * w / len))
     duracc = 0
-    for (i,t) in enumerate(ts)
-
-        period.op = t.op
+    for t in ts
+        #period.op = t.op
         setcolor(Luxor.julia_blue)
         center = start + (r + (w - 2*r) * duracc / dur, 0)
         circle(center, r, :fill)
@@ -65,16 +52,14 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), period = PlotPeriod(), dur
     end
 end
 
-function _draw(ts::OperationalScenarios, bbox = BoundingBox(), period = PlotPeriod(); 
+function _draw(ts::OperationalScenarios, bbox = BoundingBox(); 
     showdur = false,  showprob = false, profile = nothing, layout = :middle)
 
     n = length(ts.scenarios)
     h = boxheight(bbox)
-    w = boxwidth(bbox)
     sbox = BoundingBox(bbox[1] + (50,0), Point(bbox[2].x, bbox[1].y + h /n ))
 
     for (i, sc) in enumerate(ts.scenarios)
-        period.sc = i
         # Translated bounding box
         tbox = sbox + (0, (i-1) * h / n)
         # Draw a line to the midpoint of the smaller BoundingBox
@@ -95,11 +80,11 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox(), period = PlotPeri
 
         setdash("solid")
     
-        _draw(sc, tbox, period, duration(ts); showdur = showdur, profile = profile, layout = :middle)
+        _draw(sc, tbox, duration(ts); showdur = showdur, profile = profile, layout = :middle)
     end
 end
 
-function _draw(ts::TwoLevel, bbox = BoundingBox(), period = PlotPeriod(); 
+function _draw(ts::TwoLevel, bbox = BoundingBox(); 
     showdur = false, showprob = false, profile = nothing, layout = :middle)
 
     padding = 20
@@ -111,7 +96,6 @@ function _draw(ts::TwoLevel, bbox = BoundingBox(), period = PlotPeriod();
     bottomright = boxbottomleft(bbox) + (padding + w/n, -padding)
     tbox = BoundingBox(topleft, bottomright)
     for (i, sp) in enumerate(ts.operational)
-        period.sp = i
         # Bounding box for strategic level
         setcolor(Luxor.julia_green)
         if layout == :middle
@@ -129,7 +113,7 @@ function _draw(ts::TwoLevel, bbox = BoundingBox(), period = PlotPeriod();
         elseif layout == :top
             # Top band for strategic periods with operation time structures below
             top_h = 40
-            # Bounding box to hold opeational time structure
+            # Bounding box to hold operational time structure
             subbox = BoundingBox(tbox[1] + (0,top_h), tbox[2] + (-padding,0)) 
             # Box at top + line
             pt1 = boxtopleft(subbox) + (0, -top_h / 4) 
@@ -144,12 +128,12 @@ function _draw(ts::TwoLevel, bbox = BoundingBox(), period = PlotPeriod();
         else
             error("Unknown layout")
         end
-        _draw(sp, subbox, period; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+        _draw(sp, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
         tbox = tbox + (w / n, 0) 
     end
 end
 
-function _draw(ts::TwoLevelTree, bbox = BoundingBox(), period = PlotPeriod(); 
+function _draw(ts::TwoLevelTree, bbox = BoundingBox(); 
     showdur = false, showprob = false, profile = nothing, layout = :middle)
 
     padding = 20
@@ -163,20 +147,18 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox(), period = PlotPeriod();
     anchor = Dict()
            
     for sp in 1:n
-        period.sp = sp
-        nodes = [n for n in ts.nodes if n.sp == sp]
+        nodes = [n for n in ts.nodes if n.strat_node.sp == sp]
         brs = length(nodes)
         
         if layout == :middle
             hsub = boxheight(tbox)/(brs+1)
             bm = boxtopleft(tbox) + (0, hsub)
             for (br,n) in enumerate(nodes)
-                period.branch = br
                 setcolor(Luxor.julia_green)
                 box(bm, 15, 15, action=:fill)
                 line(bm, bm  + (15,0), :stroke)
                 subbox = BoundingBox(bm + (15,0) + (0,-h/2), bm + (boxwidth(tbox),h/2) + (-padding, 0))
-                _draw(n.operational, subbox, period; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+                _draw(n.strat_node.operational, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
                 bm = bm + (0, hsub)
             end
             if showdur
@@ -191,7 +173,6 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox(), period = PlotPeriod();
             offset = - 12
             prev_parent = ts.root
             for (br,node) in enumerate(nodes)
-                period.branch = br
                 setcolor(Luxor.julia_green)
                 box(bm, 15, 15, action=:fill)
                 if showprob
@@ -206,7 +187,7 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox(), period = PlotPeriod();
                     line(bm + (offset,0), anchor[node.parent], :stroke)
                 end
                 subbox = BoundingBox(bm + (0,7.5), bm + (boxwidth(tbox),h) + (-padding, 0))
-                _draw(node.operational, subbox, period; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+                _draw(node.strat_node.operational, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
                 
                 prev_parent = node.parent
                 bm = bm + (0, h * max(1,TimeStruct.nchildren(node, ts)))
