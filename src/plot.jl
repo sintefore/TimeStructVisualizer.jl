@@ -46,7 +46,7 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
          
         if !isnothing(profile)
             sethue("blue")
-            text("$(profile[period])", center + (3*r,r) , halign=:center,   valign = :top)
+            text("$(round(profile[t], digits=1))", center + (3*r,r) , halign=:center,   valign = :top)
         end
 
     end
@@ -79,8 +79,8 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox();
         end
 
         setdash("solid")
-    
-        _draw(sc, tbox, duration(ts); showdur = showdur, profile = profile, layout = :middle)
+        pr = OperationalProfile([profile[TimeStruct.ScenarioPeriod(i, 1.0, t)] for t in sc])
+        _draw(sc, tbox, duration(ts); showdur = showdur, profile = pr, layout = :middle)
     end
 end
 

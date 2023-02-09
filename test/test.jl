@@ -21,11 +21,14 @@ TimeStructPlotting.draw(strat; height=200, filename="twolevel.png", layout=:top)
 TimeStructPlotting.draw(regtree; height=300, filename="regtree.png", layout=:top)
 
 TimeStructPlotting.draw(scen; filename="scen.png", layout=:top)
-
+op = OperationalProfile([2, 1, 3])
+scp = ScenarioProfile([1.0*op, 1.1*op, 1.2*op])
+sp = StrategicProfile([scp, scp + 1, scp + 3])
+TimeStructPlotting.draw(scen; filename="scen.png", layout=:top, profile=sp)
 
 
 opscen1 = OperationalScenarios(3,[SimpleTimes(4,2), SimpleTimes(6,1), SimpleTimes(4,[1,1,3,3])], [0.3, 0.4, 0.3])
-opscen2 = OperationalScenarios(4,[SimpleTimes(5,1.5), SimpleTimes(3,2), SimpleTimes(4,[3,2,1,1]), SimpleTimes(2,3)], [0.3, 0.4, 0.2, 0.1])
+opscen2 = OperationalScenarios(4,[SimpleTimes(5,1), SimpleTimes(3,2), SimpleTimes(4,[3,2,1,1]), SimpleTimes(2,3)], [0.3, 0.4, 0.2, 0.1])
 
 TimeStructPlotting.draw(opscen1)
 
@@ -37,5 +40,5 @@ p2 = ScenarioProfile([[1, 3, 2, 4, 5], [1], [2], [3], [8]])
 
 op = OperationalScenarios(5, SimpleTimes(6,1))
 
-TimeStructPlotting.draw(twolev; layout = :top, showdur = true, showprob = true, profile = p1)
+TimeStructPlotting.draw(twolev; layout = :top, showdur = true, showprob = true, profile = p2)
 
