@@ -1,4 +1,14 @@
 
+strat_profile(profile, i) = profile
+strat_profile(profile::StrategicProfile, i) = profile.vals[i]
+
+rep_profile(profile, i) = profile
+rep_profile(profile::RepresentativeProfile, i) = profile.vals[i]
+
+scen_profile(profile, i) = profile
+scen_profile(profile::ScenarioProfile, i) = profile.vals[i]
+
+
 
 function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing; 
     showdur = false,  showprob = false, profile = nothing, layout = :middle)
@@ -30,7 +40,7 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
     end
 
     # Add circles at intervals relative to duration
-    r = max(2, min(5, h / 20, 0.2 * w / len))
+    r = max(3, min(5, h / 10, 0.2 * w / len))
     duracc = 0
     for t in ts
         #period.op = t.op
@@ -52,6 +62,24 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
     end
 end
 
+function _draw(ts::RepresentativePeriods, bbox = BoundingBox();
+    showdur = false, showprob = false, profile = nothing, layout = :middle)
+
+    n = length(ts.rep_periods)
+    w = boxwidth(bbox)
+    rbox = BoundingBox(bbox[1] + (20,0), Point(bbox[1].x + w / n, bbox[2].y ))
+    for (i, rp) in enumerate(ts.rep_periods)
+         # Translated and scaled bounding box
+         tbox = rbox + ((i-1) * w / n, 0)
+         setdash("dot")
+         setgrey(0.7)
+         box(tbox*1.05, :stroke)
+         setdash("solid")
+         _draw(rp, tbox; showdur = showdur, profile = rep_profile(profile, i), layout = layout)
+    end
+
+end
+
 function _draw(ts::OperationalScenarios, bbox = BoundingBox(); 
     showdur = false,  showprob = false, profile = nothing, layout = :middle)
 
@@ -62,6 +90,7 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox();
     for (i, sc) in enumerate(ts.scenarios)
         # Translated bounding box
         tbox = sbox + (0, (i-1) * h / n)
+        
         # Draw a line to the midpoint of the smaller BoundingBox
         setdash("dash")
         setcolor(Luxor.julia_red)
@@ -79,8 +108,7 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox();
         end
 
         setdash("solid")
-        pr = OperationalProfile([profile[TimeStruct.ScenarioPeriod(i, 1.0, t)] for t in sc])
-        _draw(sc, tbox, duration(ts); showdur = showdur, profile = pr, layout = :middle)
+        _draw(sc, tbox, duration(ts); showdur = showdur, profile = scen_profile(profile, i), layout = :middle)
     end
 end
 
@@ -128,7 +156,7 @@ function _draw(ts::TwoLevel, bbox = BoundingBox();
         else
             error("Unknown layout")
         end
-        _draw(sp, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+        _draw(sp, subbox; showdur = showdur, showprob = showprob, profile = strat_profile(profile, i), layout = layout)
         tbox = tbox + (w / n, 0) 
     end
 end
@@ -200,7 +228,7 @@ end
 
 
 function draw(ts::TimeStructure; filename = nothing, showdur = false, showprob = false, profile = nothing, 
-    layout = :middle, width=600, height= 400)
+    layout = :middle, width=800, height= 600)
     
     if isnothing(filename)
         Drawing(width, height, :svg)
