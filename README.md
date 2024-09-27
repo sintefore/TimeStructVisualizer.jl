@@ -1,4 +1,4 @@
-# TimeStructPlotting
+# TimeStructVisualizer
 
 ## Overview
 This package provides functions for visualising time structures from the `TimeStruct.jl` package.
