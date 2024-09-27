@@ -1,4 +1,4 @@
-module TimeStructPlotting
+module TimeStructVisualizer
 
 using Luxor
 using Colors
