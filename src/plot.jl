@@ -9,6 +9,8 @@ scen_profile(profile, i) = profile
 scen_profile(profile::ScenarioProfile, i) = profile.vals[i]
 
 
+display_val(value) = value
+display_val(value::Float64) = round(value, digits=1)
 
 function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
     showdur = false,  showprob = false, profile = nothing, layout = :middle)
@@ -56,7 +58,7 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
 
         if !isnothing(profile)
             sethue("blue")
-            text("$(round(profile[t], digits=1))", center + (3*r,r) , halign=:center,   valign = :top)
+            text("$(display_val(profile[t]))", center + (3*r,r) , halign=:center,   valign = :top)
         end
 
     end
