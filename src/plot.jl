@@ -188,7 +188,7 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
                 box(bm, 15, 15, action=:fill)
                 line(bm, bm  + (15,0), :stroke)
                 subbox = BoundingBox(bm + (15,0) + (0,-h/2), bm + (boxwidth(tbox),h/2) + (-padding, 0))
-                _draw(n.strat_node.operational, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+                _draw(n.operational, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
                 bm = bm + (0, hsub)
             end
             if showdur
@@ -207,7 +207,7 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
                 box(bm, 15, 15, action=:fill)
                 if showprob
                     sethue(Luxor.julia_green)
-                    text("$(round(probability(node),digits=3))", bm + (20, -5), halign=:left,   valign = :bottom)
+                    text("$(round(probability_branch(node),digits=3))", bm + (20, -5), halign=:left,   valign = :bottom)
                 end
 
                 line(bm, bm  + (w / n, 0), :stroke)
