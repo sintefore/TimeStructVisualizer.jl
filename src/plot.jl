@@ -10,12 +10,20 @@ scen_profile(profile::ScenarioProfile, i) = profile.vals[i]
 
 
 display_val(value) = value
-display_val(value::Float64) = round(value, digits=1)
+display_val(value::Float64) = round(value, digits = 1)
 
 default_palette() = [Luxor.julia_red, Luxor.julia_green, Luxor.julia_blue]
 
-function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
-    showdur = false,  showprob = false, profile = nothing, layout = :middle, palette = default_palette())
+function _draw(
+    ts::SimpleTimes,
+    bbox = BoundingBox(),
+    dur = nothing;
+    showdur = false,
+    showprob = false,
+    profile = nothing,
+    layout = :middle,
+    palette = default_palette(),
+)
 
     len = length(ts)
 
@@ -29,7 +37,7 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
     if layout == :middle
         start = boxmiddleleft(bbox)
     elseif layout == :top
-        start = boxtopleft(bbox) + (0,h/2)
+        start = boxtopleft(bbox) + (0, h/2)
     end
 
     # Draw a line across the box according to total duration
@@ -55,41 +63,67 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
 
         if showdur
             sethue("black")
-            text("$(duration(t))", center + (3*r,-r) , halign=:center,   valign = :bottom)
+            text("$(duration(t))", center + (3*r, -r), halign = :center, valign = :bottom)
         end
 
         if !isnothing(profile)
             sethue("blue")
-            text("$(display_val(profile[t]))", center + (3*r,r) , halign=:center,   valign = :top)
+            text(
+                "$(display_val(profile[t]))",
+                center + (3*r, r),
+                halign = :center,
+                valign = :top,
+            )
         end
 
     end
 end
 
-function _draw(ts::RepresentativePeriods, bbox = BoundingBox();
-    showdur = false, showprob = false, profile = nothing, layout = :middle, palette = default_palette())
+function _draw(
+    ts::RepresentativePeriods,
+    bbox = BoundingBox();
+    showdur = false,
+    showprob = false,
+    profile = nothing,
+    layout = :middle,
+    palette = default_palette(),
+)
 
     n = length(ts.rep_periods)
     w = boxwidth(bbox)
-    rbox = BoundingBox(bbox[1] + (20,0), Point(bbox[1].x + w / n, bbox[2].y ))
+    rbox = BoundingBox(bbox[1] + (20, 0), Point(bbox[1].x + w / n, bbox[2].y))
     for (i, rp) in enumerate(ts.rep_periods)
-         # Translated and scaled bounding box
-         tbox = rbox + ((i-1) * w / n, 0)
-         setdash("dot")
-         setgrey(0.7)
-         box(tbox*1.05, :stroke)
-         setdash("solid")
-         _draw(rp, tbox; showdur = showdur, profile = rep_profile(profile, i), layout = layout, palette)
+        # Translated and scaled bounding box
+        tbox = rbox + ((i-1) * w / n, 0)
+        setdash("dot")
+        setgrey(0.7)
+        box(tbox*1.05, :stroke)
+        setdash("solid")
+        _draw(
+            rp,
+            tbox;
+            showdur = showdur,
+            profile = rep_profile(profile, i),
+            layout = layout,
+            palette,
+        )
     end
 
 end
 
-function _draw(ts::OperationalScenarios, bbox = BoundingBox();
-    showdur = false,  showprob = false, profile = nothing, layout = :middle, palette = default_palette())
+function _draw(
+    ts::OperationalScenarios,
+    bbox = BoundingBox();
+    showdur = false,
+    showprob = false,
+    profile = nothing,
+    layout = :middle,
+    palette = default_palette(),
+)
 
     n = length(ts.scenarios)
     h = boxheight(bbox)
-    sbox = BoundingBox(bbox[1] + (50,0), Point(bbox[2].x, bbox[1].y + h /n ))
+    sbox = BoundingBox(bbox[1] + (50, 0), Point(bbox[2].x, bbox[1].y + h / n))
 
     for (i, sc) in enumerate(ts.scenarios)
         # Translated bounding box
@@ -100,24 +134,44 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox();
         setcolor(palette[1])
         pt2 = boxmiddleleft(tbox)
         if layout == :middle
-            pt1 =boxmiddleleft(bbox)
+            pt1 = boxmiddleleft(bbox)
         elseif layout == :top
-            pt1 =boxtopleft(bbox)
+            pt1 = boxtopleft(bbox)
         else
             error("Unknown layout for operational scenarios")
         end
         line(pt1, pt2, :stroke)
         if showprob
-            text("$(round(ts.probability[i],digits=3))", midpoint(pt1,pt2) + (5,0), halign=:left,   valign = :bottom)
+            text(
+                "$(round(ts.probability[i],digits=3))",
+                midpoint(pt1, pt2) + (5, 0),
+                halign = :left,
+                valign = :bottom,
+            )
         end
 
         setdash("solid")
-        _draw(sc, tbox, TimeStruct._total_duration(ts); showdur = showdur, profile = scen_profile(profile, i), layout = :middle, palette)
+        _draw(
+            sc,
+            tbox,
+            TimeStruct._total_duration(ts);
+            showdur = showdur,
+            profile = scen_profile(profile, i),
+            layout = :middle,
+            palette,
+        )
     end
 end
 
-function _draw(ts::TwoLevel, bbox = BoundingBox();
-    showdur = false, showprob = false, profile = nothing, layout = :middle, palette = default_palette())
+function _draw(
+    ts::TwoLevel,
+    bbox = BoundingBox();
+    showdur = false,
+    showprob = false,
+    profile = nothing,
+    layout = :middle,
+    palette = default_palette(),
+)
 
     padding = 20
 
@@ -133,40 +187,68 @@ function _draw(ts::TwoLevel, bbox = BoundingBox();
         if layout == :middle
 
             bm = boxmiddleleft(tbox)
-            box(bm, 15, 15, action=:fill)
-            line(bm, bm  + (15,0), :stroke)
-            subbox = BoundingBox(boxtopleft(tbox + (15,0)), boxbottomright(tbox) + (-padding,0))
+            box(bm, 15, 15, action = :fill)
+            line(bm, bm + (15, 0), :stroke)
+            subbox = BoundingBox(
+                boxtopleft(tbox + (15, 0)),
+                boxbottomright(tbox) + (-padding, 0),
+            )
             if showdur
                 line(boxbottomleft(tbox), boxbottomright(tbox), :stroke)
-                line(boxbottomleft(tbox), boxbottomleft(tbox) + (0,-10), :stroke)
+                line(boxbottomleft(tbox), boxbottomleft(tbox) + (0, -10), :stroke)
                 sethue("black")
-                text("$(ts.duration[i])", midpoint(boxbottomleft(tbox), boxbottomright(tbox)) + (0,-5) , halign=:center,   valign = :bottom)
+                text(
+                    "$(ts.duration[i])",
+                    midpoint(boxbottomleft(tbox), boxbottomright(tbox)) + (0, -5),
+                    halign = :center,
+                    valign = :bottom,
+                )
             end
         elseif layout == :top
             # Top band for strategic periods with operation time structures below
             top_h = 40
             # Bounding box to hold operational time structure
-            subbox = BoundingBox(tbox[1] + (0,top_h), tbox[2] + (-padding,0))
+            subbox = BoundingBox(tbox[1] + (0, top_h), tbox[2] + (-padding, 0))
             # Box at top + line
             pt1 = boxtopleft(subbox) + (0, -top_h / 4)
-            box(pt1 , top_h / 2, top_h /2, action=:fill)
-            pt1 = boxtopleft(subbox) + (0,-top_h/4)
-            pt2 = pt1 + (w / n , 0)
+            box(pt1, top_h / 2, top_h / 2, action = :fill)
+            pt1 = boxtopleft(subbox) + (0, -top_h/4)
+            pt2 = pt1 + (w / n, 0)
             line(pt1, pt2, :stroke)
             if showdur
                 sethue("black")
-                text("$(ts.duration[i])", midpoint(pt1 + (0,-5), pt2 + (0,-5)), halign=:center,   valign = :bottom)
+                text(
+                    "$(ts.duration[i])",
+                    midpoint(pt1 + (0, -5), pt2 + (0, -5)),
+                    halign = :center,
+                    valign = :bottom,
+                )
             end
         else
             error("Unknown layout")
         end
-        _draw(sp, subbox; showdur = showdur, showprob = showprob, profile = strat_profile(profile, i), layout = layout, palette)
+        _draw(
+            sp,
+            subbox;
+            showdur = showdur,
+            showprob = showprob,
+            profile = strat_profile(profile, i),
+            layout = layout,
+            palette,
+        )
         tbox = tbox + (w / n, 0)
     end
 end
 
-function _draw(ts::TwoLevelTree, bbox = BoundingBox();
-    showdur = false, showprob = false, profile = nothing, layout = :middle, palette = default_palette())
+function _draw(
+    ts::TwoLevelTree,
+    bbox = BoundingBox();
+    showdur = false,
+    showprob = false,
+    profile = nothing,
+    layout = :middle,
+    palette = default_palette(),
+)
 
     padding = 20
 
@@ -178,51 +260,79 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
     tbox = BoundingBox(topleft, bottomright)
     anchor = Dict()
 
-    for sp in 1:n
+    for sp = 1:n
         nodes = [n for n in ts.nodes if TimeStruct._strat_per(n) == sp]
         brs = length(nodes)
 
         if layout == :middle
             hsub = boxheight(tbox)/(brs+1)
             bm = boxtopleft(tbox) + (0, hsub)
-            for (br,n) in enumerate(nodes)
+            for (br, n) in enumerate(nodes)
                 setcolor(palette[2])
-                box(bm, 15, 15, action=:fill)
-                line(bm, bm  + (15,0), :stroke)
-                subbox = BoundingBox(bm + (15,0) + (0,-h/2), bm + (boxwidth(tbox),h/2) + (-padding, 0))
-                _draw(n.operational, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+                box(bm, 15, 15, action = :fill)
+                line(bm, bm + (15, 0), :stroke)
+                subbox = BoundingBox(
+                    bm + (15, 0) + (0, -h/2),
+                    bm + (boxwidth(tbox), h/2) + (-padding, 0),
+                )
+                _draw(
+                    n.operational,
+                    subbox;
+                    showdur = showdur,
+                    showprob = showprob,
+                    profile = profile,
+                    layout = layout,
+                )
                 bm = bm + (0, hsub)
             end
             if showdur
                 setcolor(palette[2])
                 line(boxbottomleft(tbox), boxbottomright(tbox), :stroke)
-                line(boxbottomleft(tbox), boxbottomleft(tbox) + (0,-10), :stroke)
+                line(boxbottomleft(tbox), boxbottomleft(tbox) + (0, -10), :stroke)
                 sethue("black")
-                text("todo", midpoint(boxbottomleft(tbox), boxbottomright(tbox)) + (0,-5) , halign=:center,   valign = :bottom)
+                text(
+                    "todo",
+                    midpoint(boxbottomleft(tbox), boxbottomright(tbox)) + (0, -5),
+                    halign = :center,
+                    valign = :bottom,
+                )
             end
         elseif layout == :top
             bm = boxtopleft(tbox)
             offset = - 12
             prev_parent = ts.root
-            for (br,node) in enumerate(nodes)
+            for (br, node) in enumerate(nodes)
                 setcolor(palette[2])
-                box(bm, 15, 15, action=:fill)
+                box(bm, 15, 15, action = :fill)
                 if showprob
                     sethue(palette[2])
-                    text("$(round(probability_branch(node),digits=3))", bm + (20, -5), halign=:left,   valign = :bottom)
+                    text(
+                        "$(round(probability_branch(node),digits=3))",
+                        bm + (20, -5),
+                        halign = :left,
+                        valign = :bottom,
+                    )
                 end
 
-                line(bm, bm  + (w / n, 0), :stroke)
-                anchor[node] = bm  + (w / n + offset, 0)
+                line(bm, bm + (w / n, 0), :stroke)
+                anchor[node] = bm + (w / n + offset, 0)
                 if sp > 1 && br > 1 && node.parent == prev_parent
-                    line(bm + (offset,0), bm, :stroke)
-                    line(bm + (offset,0), anchor[node.parent], :stroke)
+                    line(bm + (offset, 0), bm, :stroke)
+                    line(bm + (offset, 0), anchor[node.parent], :stroke)
                 end
-                subbox = BoundingBox(bm + (0,7.5), bm + (boxwidth(tbox),h) + (-padding, 0))
-                _draw(node.operational, subbox; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+                subbox =
+                    BoundingBox(bm + (0, 7.5), bm + (boxwidth(tbox), h) + (-padding, 0))
+                _draw(
+                    node.operational,
+                    subbox;
+                    showdur = showdur,
+                    showprob = showprob,
+                    profile = profile,
+                    layout = layout,
+                )
 
                 prev_parent = node.parent
-                bm = bm + (0, h * max(1,TimeStruct.nchildren(node, ts)))
+                bm = bm + (0, h * max(1, TimeStruct.nchildren(node, ts)))
             end
         end
         tbox = tbox + (w / n, 0)
@@ -231,8 +341,17 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
 end
 
 
-function draw(ts::TimeStructure; filename = nothing, showdur = false, showprob = false, profile = nothing,
-    layout = :middle, width=800, height= 600, palette = default_palette())
+function draw(
+    ts::TimeStructure;
+    filename = nothing,
+    showdur = false,
+    showprob = false,
+    profile = nothing,
+    layout = :middle,
+    width = 800,
+    height = 600,
+    palette = default_palette(),
+)
 
     if isnothing(filename)
         Drawing(width, height, :svg)
