@@ -12,8 +12,10 @@ scen_profile(profile::ScenarioProfile, i) = profile.vals[i]
 display_val(value) = value
 display_val(value::Float64) = round(value, digits=1)
 
+default_palette() = [Luxor.julia_red, Luxor.julia_green, Luxor.julia_blue]
+
 function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
-    showdur = false,  showprob = false, profile = nothing, layout = :middle)
+    showdur = false,  showprob = false, profile = nothing, layout = :middle, palette = default_palette())
 
     len = length(ts)
 
@@ -31,12 +33,12 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
     end
 
     # Draw a line across the box according to total duration
-    setcolor(Luxor.julia_red)
+    setcolor(palette[1])
     line(start, start + (w * TimeStruct._total_duration(ts) / dur, 0), :stroke)
 
     if layout == :top
         setdash("dash")
-        setcolor(Luxor.julia_red)
+        setcolor(palette[1])
         line(boxtopleft(bbox), start, :stroke)
         setdash("solid")
     end
@@ -46,7 +48,7 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
     duracc = 0
     for t in ts
         #period.op = t.op
-        setcolor(Luxor.julia_blue)
+        setcolor(palette[3])
         center = start + (r + (w - 2*r) * duracc / dur, 0)
         circle(center, r, :fill)
         duracc += duration(t)
@@ -65,7 +67,7 @@ function _draw(ts::SimpleTimes, bbox = BoundingBox(), dur = nothing;
 end
 
 function _draw(ts::RepresentativePeriods, bbox = BoundingBox();
-    showdur = false, showprob = false, profile = nothing, layout = :middle)
+    showdur = false, showprob = false, profile = nothing, layout = :middle, palette = default_palette())
 
     n = length(ts.rep_periods)
     w = boxwidth(bbox)
@@ -77,13 +79,13 @@ function _draw(ts::RepresentativePeriods, bbox = BoundingBox();
          setgrey(0.7)
          box(tbox*1.05, :stroke)
          setdash("solid")
-         _draw(rp, tbox; showdur = showdur, profile = rep_profile(profile, i), layout = layout)
+         _draw(rp, tbox; showdur = showdur, profile = rep_profile(profile, i), layout = layout, palette)
     end
 
 end
 
 function _draw(ts::OperationalScenarios, bbox = BoundingBox();
-    showdur = false,  showprob = false, profile = nothing, layout = :middle)
+    showdur = false,  showprob = false, profile = nothing, layout = :middle, palette = default_palette())
 
     n = length(ts.scenarios)
     h = boxheight(bbox)
@@ -95,7 +97,7 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox();
 
         # Draw a line to the midpoint of the smaller BoundingBox
         setdash("dash")
-        setcolor(Luxor.julia_red)
+        setcolor(palette[1])
         pt2 = boxmiddleleft(tbox)
         if layout == :middle
             pt1 =boxmiddleleft(bbox)
@@ -110,12 +112,12 @@ function _draw(ts::OperationalScenarios, bbox = BoundingBox();
         end
 
         setdash("solid")
-        _draw(sc, tbox, TimeStruct._total_duration(ts); showdur = showdur, profile = scen_profile(profile, i), layout = :middle)
+        _draw(sc, tbox, TimeStruct._total_duration(ts); showdur = showdur, profile = scen_profile(profile, i), layout = :middle, palette)
     end
 end
 
 function _draw(ts::TwoLevel, bbox = BoundingBox();
-    showdur = false, showprob = false, profile = nothing, layout = :middle)
+    showdur = false, showprob = false, profile = nothing, layout = :middle, palette = default_palette())
 
     padding = 20
 
@@ -127,7 +129,7 @@ function _draw(ts::TwoLevel, bbox = BoundingBox();
     tbox = BoundingBox(topleft, bottomright)
     for (i, sp) in enumerate(ts.operational)
         # Bounding box for strategic level
-        setcolor(Luxor.julia_green)
+        setcolor(palette[2])
         if layout == :middle
 
             bm = boxmiddleleft(tbox)
@@ -158,13 +160,13 @@ function _draw(ts::TwoLevel, bbox = BoundingBox();
         else
             error("Unknown layout")
         end
-        _draw(sp, subbox; showdur = showdur, showprob = showprob, profile = strat_profile(profile, i), layout = layout)
+        _draw(sp, subbox; showdur = showdur, showprob = showprob, profile = strat_profile(profile, i), layout = layout, palette)
         tbox = tbox + (w / n, 0)
     end
 end
 
 function _draw(ts::TwoLevelTree, bbox = BoundingBox();
-    showdur = false, showprob = false, profile = nothing, layout = :middle)
+    showdur = false, showprob = false, profile = nothing, layout = :middle, palette = default_palette())
 
     padding = 20
 
@@ -184,7 +186,7 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
             hsub = boxheight(tbox)/(brs+1)
             bm = boxtopleft(tbox) + (0, hsub)
             for (br,n) in enumerate(nodes)
-                setcolor(Luxor.julia_green)
+                setcolor(palette[2])
                 box(bm, 15, 15, action=:fill)
                 line(bm, bm  + (15,0), :stroke)
                 subbox = BoundingBox(bm + (15,0) + (0,-h/2), bm + (boxwidth(tbox),h/2) + (-padding, 0))
@@ -192,7 +194,7 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
                 bm = bm + (0, hsub)
             end
             if showdur
-                setcolor(Luxor.julia_green)
+                setcolor(palette[2])
                 line(boxbottomleft(tbox), boxbottomright(tbox), :stroke)
                 line(boxbottomleft(tbox), boxbottomleft(tbox) + (0,-10), :stroke)
                 sethue("black")
@@ -203,10 +205,10 @@ function _draw(ts::TwoLevelTree, bbox = BoundingBox();
             offset = - 12
             prev_parent = ts.root
             for (br,node) in enumerate(nodes)
-                setcolor(Luxor.julia_green)
+                setcolor(palette[2])
                 box(bm, 15, 15, action=:fill)
                 if showprob
-                    sethue(Luxor.julia_green)
+                    sethue(palette[2])
                     text("$(round(probability_branch(node),digits=3))", bm + (20, -5), halign=:left,   valign = :bottom)
                 end
 
@@ -230,7 +232,7 @@ end
 
 
 function draw(ts::TimeStructure; filename = nothing, showdur = false, showprob = false, profile = nothing,
-    layout = :middle, width=800, height= 600)
+    layout = :middle, width=800, height= 600, palette = default_palette())
 
     if isnothing(filename)
         Drawing(width, height, :svg)
@@ -240,7 +242,7 @@ function draw(ts::TimeStructure; filename = nothing, showdur = false, showprob =
 
     background("white")
     origin()
-    _draw(ts; showdur = showdur, showprob = showprob, profile = profile, layout = layout)
+    _draw(ts; showdur, showprob, profile, layout, palette)
     finish()
     preview()
 end
