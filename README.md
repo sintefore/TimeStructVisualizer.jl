@@ -22,10 +22,10 @@ cost = StrategicProfile(
     ]
 )
 
-draw(ts; profile = cost, layout=:top)
+draw(ts; filename="example.svg", profile = cost, layout=:top)
 
 ```
 
 This will produce the following figure
 
-![](docs/example.png)
+![](docs/example.svg)
