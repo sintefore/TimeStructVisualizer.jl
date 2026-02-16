@@ -17,48 +17,56 @@ strat_rep = TwoLevel(3, 20.0, rep)
 regtree = regular_tree(5, [3,2], SimpleTimes(5,1))
 regtree = regular_tree(5, [3,2], opscen)
 
-TimeStructVisualizer.draw(simple)TimeStructVisualizer.draw(periods; showdur=true, height=100, width=400, filename="simple.png")
+TimeStructVisualizer.draw(simple)
+TimeStructVisualizer.draw(periods; showdur=true, height=100, width=400, filename="simple.png")
 TimeStructVisualizer.draw(varying; showdur=true, height=100, filename="simple_times.png")
-TimeStructVisualizer.draw(rep; height=200, layout=:middle)TimeStructVisualizer.draw(scenarios; showprob=true, height=200, width=400, filename="scenario.png")TimeStructVisualizer.draw(opscen; showprob=true, height=200, filename="opscen.png")
+TimeStructVisualizer.draw(rep; height=200, layout=:middle)
+TimeStructVisualizer.draw(scenarios; showprob=true, height=200, width=400, filename="scenario.png")
+TimeStructVisualizer.draw(opscen; showprob=true, height=200, filename="opscen.png")
 TimeStructVisualizer.draw(opscen; showprob=true, height=200, filename="opscen.png")
 
-TimeStructVisualizer.draw(strat; height=200, filename="twolevel.png")TimeStructVisualizer.draw(strat; height=200, filename="twolevel.png", layout=:top)
-TimeStructVisualizer.draw(strat_rep; height=500)TimeStructVisualizer.draw(two_rep; height=500)
+TimeStructVisualizer.draw(strat; height=200, filename="twolevel.png")
+TimeStructVisualizer.draw(strat; height=200, filename="twolevel.png", layout=:top)
+TimeStructVisualizer.draw(strat_rep; height=500)
+TimeStructVisualizer.draw(two_rep; height=500)
 
 TimeStructVisualizer.draw(regtree; height=300, filename="regtree.png", layout=:top)
 TimeStructVisualizer.draw(scen; filename="scen.png", layout=:top)
 op = OperationalProfile([2, 1, 3])
 scp = ScenarioProfile([1.0*op, 1.1*op, 1.2*op])
-sp = StrategicProfile([scp, scp + 1, scp + 3])TimeStructVisualizer.draw(scen; filename="scen.png", layout=:top, profile=sp)
+sp = StrategicProfile([scp, scp + 1, scp + 3])
+TimeStructVisualizer.draw(scen; filename="scen.png", layout=:top, profile=sp)
 
 
 opscen1 = OperationalScenarios(3,[SimpleTimes(4,2), SimpleTimes(6,1), SimpleTimes(4,[1,1,3,3])], [0.3, 0.4, 0.3])
 opscen2 = OperationalScenarios(4,[SimpleTimes(5,1), SimpleTimes(3,2), SimpleTimes(4,[3,2,1,1]), SimpleTimes(2,3)], [0.3, 0.4, 0.2, 0.1])
 TimeStructVisualizer.draw(opscen1)
 
-twolev = TwoLevel(2, 53, [opscen1, opscen2])
+twolev = TwoLevel(53, [opscen1, opscen2])
 
 simple = SimpleTimes(5,1)
 p1 = OperationalProfile([1,3,3,4,2])
-p2 = ScenarioProfile([[1, 3, 2, 4, 5], [1], [2], [3], [8]])
+p2 = ScenarioProfile([OperationalProfile([1, 3, 2, 4, 5]), FixedProfile(1), FixedProfile(2), FixedProfile(3), FixedProfile(8)])
 
 op = OperationalScenarios(5, SimpleTimes(6,1))
 TimeStructVisualizer.draw(twolev; layout = :top, showdur = true, showprob = true, profile = p2)
 
-rep_periods = RepresentativePeriods(2, 365, [0.6, 0.4], [SimpleTimes(7,1), SimpleTimes(7,1)])TimeStructVisualizer.draw(rep_periods; showdur = true)
+rep_periods = RepresentativePeriods(2, 365, [0.6, 0.4], [SimpleTimes(7,1), SimpleTimes(7,1)])
+TimeStructVisualizer.draw(rep_periods; showdur = true)
 periods = TwoLevel(2, 365, rep_periods)
 
 cost = StrategicProfile(
+    [
+        RepresentativeProfile(
             [
-                RepresentativeProfile(
-                    [
-                        OperationalProfile([3, 3, 4, 3, 4, 6, 5]),
-                        FixedProfile(5)
-                    ]
-                ),
-                FixedProfile(7)
+                OperationalProfile([3, 3, 4, 3, 4, 6, 5]),
+                FixedProfile(5)
             ]
-        )TimeStructVisualizer.draw(periods; layout = :top, height=200, profile = cost, filename="profiles.png")
+        ),
+        FixedProfile(7)
+    ]
+)
+TimeStructVisualizer.draw(periods; layout = :top, height=200, profile = cost, filename="profiles.png")
 TimeStructVisualizer.draw(periods; layout = :top, height=400, filename="two_complex.png")
 
 scenarios = OperationalScenarios(
