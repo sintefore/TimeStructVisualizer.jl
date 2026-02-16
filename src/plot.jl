@@ -332,7 +332,7 @@ function _draw(
                 )
 
                 prev_parent = node.parent
-                bm = bm + (0, h * max(1, TimeStruct.nchildren(node, ts)))
+                bm = bm + (0, h * max(1, TimeStruct.n_children(node, ts)))
             end
         end
         tbox = tbox + (w / n, 0)
