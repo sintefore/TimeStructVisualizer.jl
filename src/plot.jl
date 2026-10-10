@@ -16,7 +16,8 @@ scen_profile(profile, i) = profile
 scen_profile(profile::ScenarioProfile, i) = profile.vals[min(i, end)]
 
 # Row (in units of leaf heights) for each node in a strategic tree, where each
-# node is placed on the same row as its first child
+# node is placed on the same row as its first child, and the number of leaves
+# below each node
 function tree_rows(ts::TwoLevelTree)
     children = Dict(node => [c for c in ts.nodes if c.parent == node] for node in ts.nodes)
     nleaves = Dict{Any,Int}()
@@ -38,7 +39,7 @@ function tree_rows(ts::TwoLevelTree)
             row += count_leaves(node)
         end
     end
-    return rows
+    return rows, nleaves
 end
 
 display_val(value) = value
@@ -67,6 +68,13 @@ Keyword arguments:
 - `node_size`: side length of the squares marking strategic periods and nodes.
 - `branch_length`: horizontal length of the branches leading to each operational scenario.
 - `tick`: length of the ticks at the end of time lines and duration axes.
+
+Only used by the `:nested` layout:
+- `cell_color`: color of operational periods when no profile is given.
+- `value_colors`: colors for the lowest and highest profile value.
+- `cell_separator`: width of the white line between operational periods.
+- `band_gap`: space between nested blocks, such as scenarios and representative periods.
+- `legend_width`: width of the color legend for profile values.
 """
 Base.@kwdef struct DrawStyle
     palette::Vector = default_palette()
@@ -81,6 +89,11 @@ Base.@kwdef struct DrawStyle
     node_size::Float64 = 14
     branch_length::Float64 = 50
     tick::Float64 = 6
+    cell_color = colorant"gray85"
+    value_colors = (colorant"#deebf7", colorant"#08519c")
+    cell_separator::Float64 = 1
+    band_gap::Float64 = 3
+    legend_width::Float64 = 200
 end
 
 timeline_color(s::DrawStyle) = s.palette[1]
@@ -96,6 +109,8 @@ struct DrawOptions
     showprob::Bool
     layout::Symbol
     style::DrawStyle
+    # Lowest and highest profile value, used for the colors in the :nested layout
+    value_range::Union{Nothing,Tuple}
 end
 
 # Layout helpers
@@ -107,24 +122,35 @@ function inset(bbox; left = 0, top = 0, right = 0, bottom = 0)
     )
 end
 
-# Split `bbox` into `n` columns of equal width separated by `gap`
-function split_columns(bbox, n, gap = 0)
-    w = (boxwidth(bbox) - (n - 1) * gap) / n
-    tl = boxtopleft(bbox)
-    return [
-        BoundingBox(
-            tl + ((i - 1) * (w + gap), 0),
-            tl + ((i - 1) * (w + gap) + w, boxheight(bbox)),
-        ) for i = 1:n
-    ]
+# Split `len` into parts proportional to `weights` separated by `gap`, returning
+# the start and size of each part
+function split_length(len, weights, gap)
+    sizes = max(0, len - (length(weights) - 1) * gap) .* weights ./ sum(weights)
+    starts = cumsum([0; sizes[1:end-1] .+ gap])
+    return zip(starts, sizes)
 end
 
-# Split `bbox` into `n` rows of equal height
-function split_rows(bbox, n)
-    h = boxheight(bbox) / n
+# Split `bbox` into columns with widths proportional to `weights` (or `n` columns
+# of equal width) separated by `gap`
+function split_columns(bbox, weights::AbstractVector, gap = 0)
     tl = boxtopleft(bbox)
-    return [BoundingBox(tl + (0, (i - 1) * h), tl + (boxwidth(bbox), i * h)) for i = 1:n]
+    return [
+        BoundingBox(tl + (x, 0), tl + (x + w, boxheight(bbox))) for
+        (x, w) in split_length(boxwidth(bbox), weights, gap)
+    ]
 end
+split_columns(bbox, n::Integer, gap = 0) = split_columns(bbox, ones(n), gap)
+
+# Split `bbox` into rows with heights proportional to `weights` (or `n` rows of
+# equal height) separated by `gap`
+function split_rows(bbox, weights::AbstractVector, gap = 0)
+    tl = boxtopleft(bbox)
+    return [
+        BoundingBox(tl + (0, y), tl + (boxwidth(bbox), y + h)) for
+        (y, h) in split_length(boxheight(bbox), weights, gap)
+    ]
+end
+split_rows(bbox, n::Integer, gap = 0) = split_rows(bbox, ones(n), gap)
 
 # Point where the parent structure connects to the content of `bbox`
 entry_point(bbox, opt) = opt.layout == :top ? boxtopleft(bbox) : boxmiddleleft(bbox)
@@ -293,7 +319,7 @@ end
 
 function _draw(ts::TwoLevelTree, bbox, profile, opt)
     s = opt.style
-    node_rows = tree_rows(ts)
+    node_rows, _ = tree_rows(ts)
     nleaves = maximum(values(node_rows)) + 1
 
     for (sp, col) in enumerate(split_columns(bbox, ts.len))
@@ -369,10 +395,14 @@ saved to `filename` if given.
 Keyword arguments:
 - `layout`: `:middle` connects each level at the middle of the level below it,
   `:top` shows strategic periods along the top with the rest hanging below.
+  `:nested` draws each level as blocks nested inside its parent, with widths
+  proportional to duration and scenario heights proportional to probability,
+  which works better for large and complex time structures.
 - `showdur`: show the duration of operational and strategic periods.
 - `showprob`: show probabilities of scenarios and strategic nodes, and the
   share of representative periods.
-- `profile`: a `TimeProfile` whose values are shown below each operational period.
+- `profile`: a `TimeProfile` whose values are shown below each operational period,
+  or as colors in the `:nested` layout.
 - `width`, `height`: size of the drawing.
 - `palette`: colors for operational time lines, strategic periods and operational periods.
 - `style`: a [`DrawStyle`](@ref) with all visual settings, overrides `palette`.
@@ -390,8 +420,8 @@ function draw(
     style = DrawStyle(palette = palette),
 )
 
-    if layout ∉ (:middle, :top)
-        throw(ArgumentError("Unknown layout :$layout, must be :middle or :top"))
+    if layout ∉ (:middle, :top, :nested)
+        throw(ArgumentError("Unknown layout :$layout, must be :middle, :top or :nested"))
     end
 
     if isnothing(filename)
@@ -400,6 +430,13 @@ function draw(
         Drawing(width, height, filename)
     end
 
+    render(ts, width, height; showdur, showprob, profile, layout, style)
+    finish()
+    preview()
+end
+
+# Draw `ts` on the current drawing, which has the origin at the center
+function render(ts, width, height; showdur, showprob, profile, layout, style)
     background("white")
     origin()
     fontsize(style.fontsize)
@@ -408,7 +445,16 @@ function draw(
         Point(-width / 2 + m, -height / 2 + m),
         Point(width / 2 - m, height / 2 - m),
     )
-    _draw(ts, bbox, profile, DrawOptions(showdur, showprob, layout, style))
-    finish()
-    preview()
+    if layout == :nested
+        value_range = isnothing(profile) ? nothing : extrema(profile[t] for t in ts)
+        opt = DrawOptions(showdur, showprob, layout, style, value_range)
+        if !isnothing(value_range)
+            legend = inset(bbox, top = boxheight(bbox) - style.fontsize)
+            color_legend(legend, opt)
+            bbox = inset(bbox, bottom = style.fontsize + style.gap)
+        end
+        _nested(ts, bbox, profile, opt)
+    else
+        _draw(ts, bbox, profile, DrawOptions(showdur, showprob, layout, style, nothing))
+    end
 end
